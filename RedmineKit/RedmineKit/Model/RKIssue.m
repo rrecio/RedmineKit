@@ -40,11 +40,6 @@
 @synthesize journals=_journals;
 //@synthesize activity=_activity;
 
-- (void)dealloc
-{
-    [_journals release];
-    [super dealloc];
-}
 
 - (NSString *)description
 {
@@ -87,10 +82,8 @@
                 detail.theOldValue  = [journalDict objectForKey:@"old_value"];
                 detail.name         = [journalDict objectForKey:@"name"];
                 [aJournal.details addObject:detail];
-                [detail release];
             }
             [_journals addObject:aJournal];
-            [aJournal release];
         }
     } else {
         NSLog(@"Error retrieving journals: %@", [error localizedDescription]);
@@ -99,7 +92,6 @@
 
 - (NSMutableArray *)refreshJournals
 {
-    [_journals release];
     _journals = nil;
     return [self journals];
 }
@@ -121,9 +113,8 @@
     options.assignableUsers = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_assigned_to_id']/option"];
     options.activities  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='time_entry_activity_id']/option"];
     
-    [doc release];
     
-    return [options autorelease];
+    return options;
 }
 
 - (BOOL)postUpdateWithNotes:(NSString *)notes
@@ -144,8 +135,7 @@
     NSError *error      = nil;
     NSHTTPURLResponse *response = nil;
     NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-    NSString *responseString = [[[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] autorelease]; 
-    [request release];
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]; 
     if (error) {
         NSLog(@"%d: Error updating issue: %@\n%@", [response statusCode], [error localizedDescription], responseString);
         return NO;
@@ -179,8 +169,7 @@
     NSError *error      = nil;
     NSHTTPURLResponse *response = nil;
     NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
-    NSString *responseString = [[[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] autorelease]; 
-    [request release];
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]; 
     if (error) {
         NSLog(@"%d: Error posting time entry: %@\n%@", [response statusCode], [error localizedDescription], responseString);
         return NO;
@@ -229,7 +218,7 @@
     anIssue.dueDate     = [RKParseHelper dateForString:[issueDict objectForKey:@"due_date"]];
     anIssue.priority    = [RKParseHelper valueForDict:[issueDict objectForKey:@"priority"]];
     anIssue.fixedVersion = [RKParseHelper valueForDict:[issueDict objectForKey:@"fixed_version"]];
-    return [anIssue autorelease];
+    return anIssue;
 }
 
 @end

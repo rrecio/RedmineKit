@@ -10,9 +10,9 @@
 
 @interface RKJournalDetail : NSObject
 
-@property (nonatomic, retain) NSString *theNewValue;
-@property (nonatomic, retain) NSString *property;
-@property (nonatomic, retain) NSString *theOldValue;
-@property (nonatomic, retain) NSString *name;
+@property (nonatomic) NSString *theNewValue;
+@property (nonatomic) NSString *property;
+@property (nonatomic) NSString *theOldValue;
+@property (nonatomic) NSString *name;
 
 @end

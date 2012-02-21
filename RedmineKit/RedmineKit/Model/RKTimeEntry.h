@@ -11,15 +11,15 @@
 @class RKValue;
 @interface RKTimeEntry : NSObject
 
-@property (nonatomic, retain) NSNumber *issueIndex;
-@property (nonatomic, retain) NSDate *createdOn;
-@property (nonatomic, retain) RKValue *activity;
-@property (nonatomic, retain) RKValue *user;
-@property (nonatomic, retain) NSDate *updatedOn;
-@property (nonatomic, retain) NSString *comments;
-@property (nonatomic, retain) NSNumber *index;
-@property (nonatomic, retain) NSDate *spentOn;
-@property (nonatomic, retain) NSNumber *hours;
-@property (nonatomic, retain) RKValue *project;
+@property (nonatomic) NSNumber *issueIndex;
+@property (nonatomic) NSDate *createdOn;
+@property (nonatomic) RKValue *activity;
+@property (nonatomic) RKValue *user;
+@property (nonatomic) NSDate *updatedOn;
+@property (nonatomic) NSString *comments;
+@property (nonatomic) NSNumber *index;
+@property (nonatomic) NSDate *spentOn;
+@property (nonatomic) NSNumber *hours;
+@property (nonatomic) RKValue *project;
 
 @end

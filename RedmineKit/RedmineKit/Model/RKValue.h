@@ -10,8 +10,8 @@
 
 @interface RKValue : NSObject
 
-@property (nonatomic, retain) NSString *name;
-@property (nonatomic, retain) NSNumber *index;
+@property (nonatomic) NSString *name;
+@property (nonatomic) NSNumber *index;
 
 - (id)initWithName:(NSString *)name andIndex:(NSNumber *)index;
 + (RKValue *)valueWithIndex:(NSNumber *)index;

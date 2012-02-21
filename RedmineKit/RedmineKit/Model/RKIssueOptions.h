@@ -10,12 +10,12 @@
 
 @interface RKIssueOptions : NSObject
 
-@property (nonatomic, retain) NSArray *trackers;
-@property (nonatomic, retain) NSArray *statuses;
-@property (nonatomic, retain) NSArray *priorities;
-@property (nonatomic, retain) NSArray *versions;
-@property (nonatomic, retain) NSArray *categories;
-@property (nonatomic, retain) NSArray *assignableUsers;
-@property (nonatomic, retain) NSArray *activities;
+@property (nonatomic) NSArray *trackers;
+@property (nonatomic) NSArray *statuses;
+@property (nonatomic) NSArray *priorities;
+@property (nonatomic) NSArray *versions;
+@property (nonatomic) NSArray *categories;
+@property (nonatomic) NSArray *assignableUsers;
+@property (nonatomic) NSArray *activities;
 
 @end

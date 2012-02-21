@@ -25,7 +25,7 @@
             [array addObject:[self valueForElement:e]];
         }
     }
-    return [array autorelease];
+    return array;
 }
 
 + (RKValue *)valueForElement:(TFHppleElement *)e
@@ -35,9 +35,8 @@
     NSNumberFormatter *f = [[NSNumberFormatter alloc] init];
     [f setNumberStyle:NSNumberFormatterDecimalStyle];
     NSNumber *indexNumber = [f numberFromString:[e objectForKey:@"value"]];
-    [f release];
     value.index = indexNumber;
-    return [value autorelease];
+    return value;
 }
 
 + (NSDictionary *)dictFromValue:(RKValue *)value
@@ -45,12 +44,12 @@
     NSMutableDictionary *dict = [[NSMutableDictionary alloc] init];
     [dict setObject:value.name forKey:@"name"];
     [dict setObject:value.index forKey:@"id"];
-    return [dict autorelease];
+    return dict;
 }
 
 + (NSString *)shortDateStringFromDate:(NSDate *)date
 {
-    NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"yyyy/MM/dd"];
     return [dateFormatter stringFromDate:date];
 }
@@ -60,15 +59,15 @@
     RKValue *value = [[RKValue alloc] init];
     value.name = [dict objectForKey:@"name"];
     value.index = [dict objectForKey:@"id"];
-    return [value autorelease];
+    return value;
 }
 
 + (NSDate *)dateForString:(NSString *)dateString
 {
-    NSDateFormatter *dateFormatter = [[[NSDateFormatter alloc] init] autorelease];
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
     [dateFormatter setDateFormat:@"yyyy/MM/dd HH:mm:ss Z"];
     NSDate *date = [dateFormatter dateFromString:dateString];
-    return [[date retain] autorelease];
+    return date;
 }
 
 

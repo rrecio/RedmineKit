@@ -14,23 +14,23 @@
 @class RKTimeEntry;
 @interface RKIssue : NSObject
 
-@property (nonatomic, retain) RKValue *status;
-@property (nonatomic, retain) RKValue *author;
-@property (nonatomic, retain) NSNumber *doneRatio;
-@property (nonatomic, retain) RKValue *assignedTo;
-@property (nonatomic, retain) RKValue *fixedVersion;
-@property (nonatomic, retain) NSDate *createdOn;
-@property (nonatomic, retain) NSString *subject;
-@property (nonatomic, retain) NSDate *updatedOn;
-@property (nonatomic, retain) NSNumber *spentHours;
-@property (nonatomic, retain) RKValue *tracker;
-@property (nonatomic, retain) NSNumber *index;
-@property (nonatomic, retain) NSDate *startDate;
-@property (nonatomic, retain) NSDate *dueDate;
-@property (nonatomic, retain) RKValue *priority;
-@property (nonatomic, retain) RKProject *project;
-@property (nonatomic, retain) NSString *issueDescription;
-@property (nonatomic, retain) NSMutableArray *journals;
+@property (nonatomic) RKValue *status;
+@property (nonatomic) RKValue *author;
+@property (nonatomic) NSNumber *doneRatio;
+@property (nonatomic) RKValue *assignedTo;
+@property (nonatomic) RKValue *fixedVersion;
+@property (nonatomic) NSDate *createdOn;
+@property (nonatomic) NSString *subject;
+@property (nonatomic) NSDate *updatedOn;
+@property (nonatomic) NSNumber *spentHours;
+@property (nonatomic) RKValue *tracker;
+@property (nonatomic) NSNumber *index;
+@property (nonatomic) NSDate *startDate;
+@property (nonatomic) NSDate *dueDate;
+@property (nonatomic) RKValue *priority;
+@property (nonatomic) RKProject *project;
+@property (nonatomic) NSString *issueDescription;
+@property (nonatomic) NSMutableArray *journals;
 //@property (nonatomic, retain) Value *activity;
 
 + (RKIssue *)issueForIssueDict:(NSDictionary *)issueDict;

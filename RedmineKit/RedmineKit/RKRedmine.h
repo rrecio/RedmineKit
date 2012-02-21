@@ -24,10 +24,10 @@
     NSUInteger pageOffset;
 }
 
-@property (nonatomic, retain) NSString *username;
-@property (nonatomic, retain) NSString *password;
-@property (nonatomic, retain) NSString *apiKey;
-@property (nonatomic, retain) NSString *serverAddress;
+@property (nonatomic) NSString *username;
+@property (nonatomic) NSString *password;
+@property (nonatomic) NSString *apiKey;
+@property (nonatomic) NSString *serverAddress;
 
 - (void)login;
 /**

@@ -33,18 +33,18 @@ typedef enum {
     NSUInteger pageOffset;
 }
 
-@property (nonatomic, retain) NSString *identifier;
-@property (nonatomic, retain) NSString *homepage;
-@property (nonatomic, retain) NSDate *createdOn;
-@property (nonatomic, retain) NSString *name;
-@property (nonatomic, retain) NSDate *updatedOn;
-@property (nonatomic, retain) NSString *projectDescription;
-@property (nonatomic, retain) NSNumber *index;
-@property (nonatomic, retain) RKValue *parent;
-@property (nonatomic, retain) NSMutableArray *issues;
-@property (nonatomic, retain) RKRedmine *redmine;
+@property (nonatomic) NSString *identifier;
+@property (nonatomic) NSString *homepage;
+@property (nonatomic) NSDate *createdOn;
+@property (nonatomic) NSString *name;
+@property (nonatomic) NSDate *updatedOn;
+@property (nonatomic) NSString *projectDescription;
+@property (nonatomic) NSNumber *index;
+@property (nonatomic) RKValue *parent;
+@property (nonatomic) NSMutableArray *issues;
+@property (nonatomic) RKRedmine *redmine;
 @property (nonatomic) RKIssueSortBy sortIssuesBy;
-@property (nonatomic, retain) NSNumber *orderIssuesDesc;
+@property (nonatomic) NSNumber *orderIssuesDesc;
 
 + (RKProject *)projectForProjectDict:(NSDictionary *)projectDict;
 /**

@@ -14,12 +14,12 @@ int main(int argc, char *argv[])
 {
     @autoreleasepool {
         RKRedmine *redmine = [[RKRedmine alloc] init];
-        redmine.serverAddress = @"http://www.redmine.org";
-        redmine.username = @"myuser";
-        redmine.password = @"mypass";
+        redmine.serverAddress = @"http://projetos.owera.com.br";
+        redmine.username = @"testuser";
+        redmine.password = @"test123";
         [redmine login];
         
-        RKProject *projetoRedmine = [redmine projectForIdentifier:@"imobiliaria"];
+        RKProject *projetoRedmine = [redmine projectForIdentifier:@"testproject"];
 //        projetoRedmine.sortIssuesBy = RKIssueSortByAssignedTo;
         for (RKIssue *issue in [projetoRedmine issues]) {
             NSLog(@"%@: %@", issue.index, issue.assignedTo.name);

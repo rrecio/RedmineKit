@@ -16,7 +16,7 @@
 + (RKValue *)valueWithIndex:(NSNumber *)index
 {
     RKValue *value = [[RKValue alloc] initWithName:nil andIndex:index];
-    return [value autorelease];
+    return value;
 }
 
 - (id)initWithName:(NSString *)name andIndex:(NSNumber *)index {

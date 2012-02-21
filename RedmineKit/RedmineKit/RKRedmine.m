@@ -24,11 +24,6 @@
 @synthesize apiKey=_apiKey;
 @synthesize serverAddress=_serverAddress;
 
-- (void)dealloc
-{
-    [_projects release];
-    [super dealloc];
-}
 
 #pragma mark - Initializers
 
@@ -49,13 +44,13 @@
     NSString *urlString     = [NSString stringWithFormat:@"%@/login", self.serverAddress];
     NSURL *url              = [NSURL URLWithString:urlString];
     
-    NSMutableString *postString    = [[[NSMutableString alloc] init] autorelease];
+    NSMutableString *postString    = [[NSMutableString alloc] init];
     NSString *auth_key = [[self authKey] stringByReplacingOccurrencesOfString:@"+" withString:@"%2B"];
     [postString appendFormat:@"authenticity_token=%@", auth_key];
     [postString appendFormat:@"&username=%@", _user];
     [postString appendFormat:@"&password=%@", _pass];
     
-    NSMutableURLRequest *request = [[[NSMutableURLRequest alloc] initWithURL:url] autorelease];
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
     [request setHTTPMethod:@"POST"];
     [request setHTTPBody:[postString dataUsingEncoding:NSUTF8StringEncoding]];
     
@@ -80,7 +75,6 @@
         TFHppleElement *input   = [elements objectAtIndex:0];
         self.apiKey         = [input content];
     }
-    [doc release];
 }
 
 - (NSString *)authKey
@@ -95,8 +89,7 @@
         TFHppleElement *input   = [elements objectAtIndex:0];
         auth_key      = [input objectForKey:@"value"];
     }
-    [doc release];
-    return [[auth_key retain] autorelease];
+    return auth_key;
 }
 
 #pragma mark - Redmine Interface
@@ -166,7 +159,6 @@
 
 - (NSArray *)refreshProjects
 {
-    [_projects release];
     _projects = nil;
     return [self projects];
 }
@@ -185,7 +177,7 @@
         NSLog(@"Got issue: %@ from project: %@", anIssue, anIssue.project);
         return anIssue;
     } else {
-        NSLog(@"Error retrieving issues: %@", [error localizedDescription]);
+        NSLog(@"Error retrieving issue: %@", [error localizedDescription]);
         return nil;
     }
 }

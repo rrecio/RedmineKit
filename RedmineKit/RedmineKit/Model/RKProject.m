@@ -129,7 +129,6 @@
 
 - (NSMutableArray *)refreshIssues
 {
-    [_issues release];
     _issues = nil;
     return [self issues];
 }
@@ -150,8 +149,7 @@
     newIssueOptions.versions    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_fixed_version_id']/option"];
     newIssueOptions.assignableUsers = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_assigned_to_id']/option"];
     
-    [doc release];
-    return [newIssueOptions autorelease];
+    return newIssueOptions;
 }
 
 - (RKIssue *)issueForIndex:(NSNumber *)index
@@ -174,7 +172,7 @@
             anIssue.project     = self;
             [_issues addObject:anIssue];
         } else {
-            NSLog(@"Error retrieving issues: %@", [error localizedDescription]);
+            NSLog(@"Error retrieving issue: %@", [error localizedDescription]);
         }
     }
     return issue;
@@ -196,8 +194,7 @@
     [request setHTTPBody:jsonData];
     NSError *error      = nil;
     NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:&error];
-    NSString *responseString = [[[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding] autorelease]; 
-    [request release];
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]; 
     if (error) {
         NSLog(@"Error posting new issue: %@", [error localizedDescription]);
         return NO;
@@ -218,7 +215,7 @@
     aProject.projectDescription = [projectDict objectForKey:@"description"];
     aProject.index          = [projectDict objectForKey:@"id"];
     aProject.parent         = [RKParseHelper valueForDict:[projectDict objectForKey:@"parent"]];
-    return [aProject autorelease];
+    return aProject;
 }
 
 @end
