@@ -2,6 +2,11 @@
 
 Objective-C library for using Redmine
 
+# Requirements
+
+* SBJSON
+* Hpple
+
 # Usage Instructions
 
 ## Authentication
@@ -27,7 +32,7 @@ Objective-C library for using Redmine
     NSArray *issues = [myProject issues];
     for (RKIssue *issue in issues) {
         NSLog(@"=> %@", issue.subject);
-        
+
         NSArray *journals = [issue journals];
         for (RKJournal *journal in journals) {
             NSLog(@"==> %@: %@", journal.createdOn, journal.notes);
@@ -56,7 +61,7 @@ Objective-C library for using Redmine
 
     RKIssue *myIssue = [myRedmine issueForIndex:myIssueIndex];
     RKIssueOptions *options = [myIssue updateOptions];
-    
+
     RKTimeEntry *entry = [[RKTimeEntry alloc] init];
     entry.spentOn = [options.activities objectAtIndex:activityIndex];
     entry.hours = [NSNumber numberWithFloat:3.5];
