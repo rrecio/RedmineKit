@@ -26,25 +26,27 @@ typedef enum {
 @class RKIssue;
 @class RKIssueOptions;
 @class RKRedmine;
-@interface RKProject : NSObject
+@interface RKProject : NSObject <NSCopying>
 {
     NSUInteger issuesPageCount;
     NSUInteger totalIssues;
     NSUInteger pageOffset;
 }
 
-@property (nonatomic) NSString *identifier;
-@property (nonatomic) NSString *homepage;
-@property (nonatomic) NSDate *createdOn;
-@property (nonatomic) NSString *name;
-@property (nonatomic) NSDate *updatedOn;
-@property (nonatomic) NSString *projectDescription;
-@property (nonatomic) NSNumber *index;
-@property (nonatomic) RKValue *parent;
-@property (nonatomic) NSMutableArray *issues;
-@property (nonatomic) RKRedmine *redmine;
+@property (strong, nonatomic) NSString *identifier;
+@property (strong, nonatomic) NSString *homepage;
+@property (strong, nonatomic) NSDate *createdOn;
+@property (strong, nonatomic) NSString *name;
+@property (strong, nonatomic) NSDate *updatedOn;
+@property (strong, nonatomic) NSString *projectDescription;
+@property (strong, nonatomic) NSNumber *index;
+@property (strong, nonatomic) RKValue *parent;
+@property (strong, nonatomic) NSMutableArray *issues;
+@property (strong, nonatomic) RKRedmine *redmine;
 @property (nonatomic) RKIssueSortBy sortIssuesBy;
-@property (nonatomic) NSNumber *orderIssuesDesc;
+@property (strong, nonatomic) NSNumber *orderIssuesDesc;
+
+- (NSMutableArray *)refreshIssues;
 
 + (RKProject *)projectForProjectDict:(NSDictionary *)projectDict;
 /**
@@ -72,5 +74,9 @@ typedef enum {
  * (ex.: versions, priorities, project members, etc.)
  */
 - (RKIssueOptions *)newIssueOptions;
+
+- (NSDictionary *)projectDict;
+
+- (BOOL)postProjectUpdate;
 
 @end

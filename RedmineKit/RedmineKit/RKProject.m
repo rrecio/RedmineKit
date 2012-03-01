@@ -8,7 +8,7 @@
 
 #import "RKProject.h"
 #import "RKRedmine.h"
-#import "JSON.h"
+#import "SBJSON.h"
 #import "TFHpple.h"
 #import "RKParseHelper.h"
 #import "RKRedmine.h"
@@ -37,9 +37,11 @@
 
 - (NSMutableArray *)issues
 {
-    if (_issues == nil) {
+    if (!_issues) {
         _issues  = [NSMutableArray array];
         issuesPageCount = 1;
+        pageOffset = 0;
+        totalIssues = 0;
         [self loadMoreIssues];
     }
     return _issues;
@@ -97,7 +99,6 @@
 - (void)loadMoreIssues
 {
     if ([self isLastPage]) {
-        NSLog(@"It's last page!");
         return;
     }
     NSString *order = [self.orderIssuesDesc boolValue] ? @":desc" : @"";
@@ -118,7 +119,7 @@
             [_issues addObject:anIssue];
         }
     } else {
-        NSLog(@"Error retrieving issues: %@", [error localizedDescription]);
+        NSLog(@"Error loading more issues: %@. URL string: %@", [error localizedDescription], urlString);
     }
 }
 
@@ -135,20 +136,30 @@
 
 - (RKIssueOptions *)newIssueOptions
 {
+    if (!self.redmine.loggedIn) [self.redmine login];
+    
     RKIssueOptions *newIssueOptions = [[RKIssueOptions alloc] init];
     
     NSString *urlString     = [NSString stringWithFormat:@"%@/projects/%@/issues/new?key=%@", self.redmine.serverAddress, self.index, self.redmine.apiKey];
     NSURL *url              = [NSURL URLWithString:urlString];
-    NSData  *data           = [NSData dataWithContentsOfURL:url];
-    TFHpple *doc            = [[TFHpple alloc] initWithHTMLData:data];
-    
-    newIssueOptions.trackers    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_tracker_id']/option"];
-    newIssueOptions.statuses    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_status_id']/option"];
-    newIssueOptions.priorities  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_priority_id']/option"];
-    newIssueOptions.categories  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_category_id']/option"];
-    newIssueOptions.versions    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_fixed_version_id']/option"];
-    newIssueOptions.assignableUsers = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_assigned_to_id']/option"];
-    
+    NSMutableURLRequest *request    = [[NSMutableURLRequest alloc] initWithURL:url];
+    NSHTTPURLResponse *response     = nil;
+    NSError *error                  = nil;
+    NSData *data                    = [NSURLConnection sendSynchronousRequest:request 
+                                                            returningResponse:&response
+                                                                        error:&error];
+    if (!error) {
+        TFHpple *doc            = [[TFHpple alloc] initWithHTMLData:data];    
+        newIssueOptions.trackers    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_tracker_id']/option"];
+        newIssueOptions.statuses    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_status_id']/option"];
+        newIssueOptions.priorities  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_priority_id']/option"];
+        newIssueOptions.categories  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_category_id']/option"];
+        newIssueOptions.versions    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_fixed_version_id']/option"];
+        newIssueOptions.assignableUsers = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_assigned_to_id']/option"];
+    } else {
+            NSLog(@"Error fetching new issue options: %@ (HTTP status code: %d)", [error localizedDescription], [response statusCode]);
+    }
+        
     return newIssueOptions;
 }
 
@@ -196,10 +207,32 @@
     NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:&error];
     NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]; 
     if (error) {
-        NSLog(@"Error posting new issue: %@", [error localizedDescription]);
+        NSLog(@"Error posting new issue: %@. Response from server: %@", [error localizedDescription], responseString);
         return NO;
     } else {
-        NSLog(@"New issue posted successfully. Response:\n%@", responseString);
+        return YES;
+    }
+}
+
+- (BOOL)postProjectUpdate {
+    NSMutableDictionary *jsonDict = [[NSMutableDictionary alloc] init];
+    [jsonDict setObject:[self projectDict] forKey:@"project"];
+    NSString *jsonString = [jsonDict JSONRepresentation];
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *urlString = [NSString stringWithFormat:@"%@/projects/%@.json?key=%@", self.redmine.serverAddress, self.index, self.redmine.apiKey];
+    NSURL *url          = [NSURL URLWithString:urlString];
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
+    [request setHTTPMethod:@"PUT"];
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    [request setHTTPBody:jsonData];
+    NSError *error      = nil;
+    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:&error];
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]; 
+    if (error) {
+        NSLog(@"Error updating project: %@. URL string: %@", [error localizedDescription], urlString);
+        return NO;
+    } else {
+        NSLog(@"Project update posted successfully. Response:\n%@", responseString);
         return YES;
     }
 }
@@ -216,6 +249,30 @@
     aProject.index          = [projectDict objectForKey:@"id"];
     aProject.parent         = [RKParseHelper valueForDict:[projectDict objectForKey:@"parent"]];
     return aProject;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    RKProject *copy = [[RKProject alloc] init];
+    copy.identifier = [self.identifier copy];
+    copy.homepage = [self.homepage copy];
+    copy.createdOn = [self.createdOn copy];
+    copy.name = [self.name copy];
+    copy.updatedOn = [self.updatedOn copy];
+    copy.projectDescription = [self.projectDescription copy];
+    copy.index = [self.index copy];
+    copy.parent = [self.parent copy];
+    copy.redmine = [self.redmine copy];
+    return copy;
+}
+
+- (NSDictionary *)projectDict
+{
+    NSMutableDictionary *projectDict = [[NSMutableDictionary alloc] init];
+    if (self.identifier)            [projectDict setObject:self.identifier          forKey:@"identifier"];
+    if (self.name)                  [projectDict setObject:self.name                forKey:@"name"];
+    if (self.projectDescription)    [projectDict setObject:self.projectDescription  forKey:@"description"];
+    return projectDict;
 }
 
 @end

@@ -9,7 +9,7 @@
 #import "RKRedmine.h"
 #import "RKParseHelper.h"
 #import "TFHpple.h"
-#import "JSON.h"
+#import "SBJSON.h"
 
 @interface RKRedmine ()
 - (NSString *)authKey;
@@ -23,7 +23,7 @@
 @synthesize password=_pass;
 @synthesize apiKey=_apiKey;
 @synthesize serverAddress=_serverAddress;
-
+@synthesize loggedIn;
 
 #pragma mark - Initializers
 
@@ -31,10 +31,30 @@
     self = [super init];
     if (self) {
         NSUserDefaults *stdDefaults = [NSUserDefaults standardUserDefaults];
-        
+        self.loggedIn = NO;
         self.apiKey = [stdDefaults objectForKey:@"apikey"];
     }
     return self;
+}
+
+#pragma mark - NSCoding
+
+- (id)initWithCoder:(NSCoder *)aDecoder
+{
+    self = [self init];
+    self.username       = [aDecoder decodeObjectForKey:@"username"];
+    self.password       = [aDecoder decodeObjectForKey:@"password"];
+    self.serverAddress  = [aDecoder decodeObjectForKey:@"serverAddress"];
+    self.apiKey         = [aDecoder decodeObjectForKey:@"apiKey"];
+    return self;
+}
+
+- (void)encodeWithCoder:(NSCoder *)aCoder
+{
+    [aCoder encodeObject:self.username      forKey:@"username"];
+    [aCoder encodeObject:self.password      forKey:@"password"];
+    [aCoder encodeObject:self.serverAddress forKey:@"serverAddress"];
+    [aCoder encodeObject:self.apiKey        forKey:@"apiKey"];
 }
 
 #pragma mark - Internals
@@ -60,7 +80,8 @@
     if (error) {
         NSLog(@"Error logging in: %@", [error localizedDescription]);
     } else {
-        [self fetchApiKey];
+        if (self.apiKey == nil) [self fetchApiKey];
+        self.loggedIn = YES;
     }
 }
 
@@ -96,9 +117,11 @@
 
 - (NSArray *)projects
 {
-    if (_projects == nil) {
+    if (!_projects) {
         _projects = [[NSMutableArray alloc] init];
         projectPage = 1;
+        pageOffset = 0;
+        totalProjects = 0;
         [self loadMoreProjects];
     }
     return _projects;
@@ -107,12 +130,12 @@
 - (void)loadMoreProjects
 {
     if ([self isLastPage]) {
-        NSLog(@"It's last page!");
         return;
     }
     NSString *urlString         = [NSString stringWithFormat:@"%@/projects.json?page=%d&key=%@", self.serverAddress, projectPage++, self.apiKey];
     NSURL *url                  = [NSURL URLWithString:urlString];
-    NSString *responseString    = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
+    NSError *error              = nil;
+    NSString *responseString    = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
     NSDictionary *jsonDict      = [responseString JSONValue];
     totalProjects               = [[jsonDict objectForKey:@"total_count"] intValue];
     pageOffset                  = [[jsonDict objectForKey:@"offset"] intValue];
@@ -121,6 +144,9 @@
         RKProject *aProject     = [RKProject projectForProjectDict:projectDict];
         aProject.redmine        = self;
         [_projects addObject:aProject];
+    }
+    if (error) {
+        NSLog(@"Error loading more projects: %@", [error localizedDescription]);
     }
 }
 
@@ -141,13 +167,18 @@
     if (projectFound == nil) {
         NSString *urlString     = [NSString stringWithFormat:@"%@/projects/%@.json?key=%@", self.serverAddress, identifier, self.apiKey];
         NSURL *url              = [NSURL URLWithString:urlString];
-        NSString *responseString = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
+        NSError *error          = nil;
+        NSString *responseString = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
         NSDictionary *jsonDict  = [responseString JSONValue];
         NSDictionary *projectDict = [jsonDict objectForKey:@"project"];
         RKProject *aProject       = [RKProject projectForProjectDict:projectDict];
         aProject.redmine        = self;
         [_projects addObject:aProject];
         projectFound = aProject;
+        if (error)
+        {
+            NSLog(@"Error loading project for identifier: %@", [error localizedDescription]);
+        }
     }
     return projectFound;
 }
@@ -174,11 +205,45 @@
         NSDictionary *issueDict = [jsonDict objectForKey:@"issue"];
         RKIssue *anIssue        = [RKIssue issueForIssueDict:issueDict];
         anIssue.project         = [self projectForIndex:[[issueDict objectForKey:@"project"] objectForKey:@"id"]];
-        NSLog(@"Got issue: %@ from project: %@", anIssue, anIssue.project);
         return anIssue;
     } else {
         NSLog(@"Error retrieving issue: %@", [error localizedDescription]);
         return nil;
+    }
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    RKRedmine *copy = [[RKRedmine alloc] init];
+    copy.username = [self.username copy];
+    copy.password = [self.password copy];
+    copy.serverAddress = [self.serverAddress copy];
+    copy.apiKey = [self.apiKey copy];
+    return copy;
+}
+
+- (BOOL)postNewProject:(RKProject *)project
+{
+    NSMutableDictionary *jsonDict = [[NSMutableDictionary alloc] init];
+    [jsonDict setObject:[project projectDict] forKey:@"project"];
+    NSString *jsonString = [jsonDict JSONRepresentation];
+    NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
+    NSLog(@"new project json string: %@", jsonString);
+    NSString *urlString = [NSString stringWithFormat:@"%@/projects.json?key=%@", self.serverAddress, self.apiKey];
+    NSURL *url          = [NSURL URLWithString:urlString];
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
+    [request setHTTPMethod:@"POST"];
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    [request setHTTPBody:jsonData];
+    NSError *error      = nil;
+    NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:nil error:&error];
+    NSString *responseString = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding]; 
+    if (error) {
+        NSLog(@"Error posting new project: %@", [error localizedDescription]);
+        return NO;
+    } else {
+        NSLog(@"New project posted successfully. Response:\n%@", responseString);
+        return YES;
     }
 }
 

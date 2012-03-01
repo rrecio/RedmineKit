@@ -27,42 +27,32 @@
  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#import <Foundation/Foundation.h>
+#import "NSObject+SBJson.h"
+#import "SBJsonWriter.h"
+#import "SBJsonParser.h"
 
+@implementation NSObject (NSObject_SBJsonWriting)
 
-/**
- @brief Adds JSON generation to Foundation classes
- 
- This is a category on NSObject that adds methods for returning JSON representations
- of standard objects to the objects themselves. This means you can call the
- -JSONRepresentation method on an NSArray object and it'll do what you want.
- */
-@interface NSObject (NSObject_SBJSON)
-
-/**
- @brief Returns a string containing the receiver encoded as a JSON fragment.
- 
- This method is added as a category on NSObject but is only actually
- supported for the following objects:
- @li NSDictionary
- @li NSArray
- @li NSString
- @li NSNumber (also used for booleans)
- @li NSNull 
- 
- @deprecated Given we bill ourselves as a "strict" JSON library, this method should be removed.
- */
-- (NSString *)JSONFragment;
-
-/**
- @brief Returns a string containing the receiver encoded in JSON.
-
- This method is added as a category on NSObject but is only actually
- supported for the following objects:
- @li NSDictionary
- @li NSArray
- */
-- (NSString *)JSONRepresentation;
+- (NSString *)JSONRepresentation {
+    SBJsonWriter *writer = [[SBJsonWriter alloc] init];    
+    NSString *json = [writer stringWithObject:self];
+    if (!json)
+        NSLog(@"-JSONRepresentation failed. Error is: %@", writer.error);
+    return json;
+}
 
 @end
 
+
+
+@implementation NSString (NSString_SBJsonParsing)
+
+- (id)JSONValue {
+    SBJsonParser *parser = [[SBJsonParser alloc] init];
+    id repr = [parser objectWithString:self];
+    if (!repr)
+        NSLog(@"-JSONValue failed. Error is: %@", parser.error);
+    return repr;
+}
+
+@end

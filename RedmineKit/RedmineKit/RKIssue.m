@@ -8,12 +8,13 @@
 
 #import "RKIssue.h"
 #import "RKRedmine.h"
-#import "JSON.h"
+#import "SBJSON.h"
 #import "RKIssueOptions.h"
 #import "TFHpple.h"
 #import "RKParseHelper.h"
 #import "RKProject.h"
 #import "RKValue.h"
+
 
 @interface RKIssue ()
 - (void)loadJournals;
@@ -30,6 +31,7 @@
 @synthesize subject=_subject;
 @synthesize updatedOn=_updatedOn;
 @synthesize spentHours=_spentHours;
+@synthesize estimatedHours=_estimatedHours;
 @synthesize tracker=_tracker;
 @synthesize index=_index;
 @synthesize startDate=_startDate;
@@ -38,7 +40,8 @@
 @synthesize project=_project;
 @synthesize issueDescription=_issueDescription;
 @synthesize journals=_journals;
-//@synthesize activity=_activity;
+@synthesize parentTask=_parentTask;
+@synthesize category=_category;
 
 
 - (NSString *)description
@@ -52,7 +55,6 @@
     if (_journals == nil) {
         [self loadJournals];
     }
-    
     return _journals;
 }
 
@@ -62,7 +64,6 @@
     NSURL *url                  = [NSURL URLWithString:urlString];
     NSError *error              = nil;
     NSString *responseString    = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:&error];
-    NSLog(@"Loading journals from %@. Response: \n%@", urlString, responseString);
     _journals                   = [[NSMutableArray alloc] init];
     if (!error) {
         NSDictionary *jsonDict  = [responseString JSONValue];
@@ -96,23 +97,35 @@
     return [self journals];
 }
 
-- (RKIssueOptions *)updateOptions;
+- (RKIssueOptions *)updateOptions
 {
-    RKIssueOptions *options = [[RKIssueOptions alloc] init];
+    if (!self.project.redmine.loggedIn) [self.project.redmine login];
     
-    NSString *urlString     = [NSString stringWithFormat:@"%@/issues/%@?key=%@", self.project.redmine.serverAddress, self.index, self.project.redmine.apiKey];
-    NSURL *url              = [NSURL URLWithString:urlString];
-    NSData  *data           = [NSData dataWithContentsOfURL:url];
-    TFHpple *doc            = [[TFHpple alloc] initWithHTMLData:data];
-    
-    options.trackers    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_tracker_id']/option"];
-    options.statuses    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_status_id']/option"];
-    options.priorities  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_priority_id']/option"];
-    options.categories  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_category_id']/option"];
-    options.versions    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_fixed_version_id']/option"];
-    options.assignableUsers = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_assigned_to_id']/option"];
-    options.activities  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='time_entry_activity_id']/option"];
-    
+    RKIssueOptions *options         = [[RKIssueOptions alloc] init];
+
+    NSString *urlString             = [NSString stringWithFormat:@"%@/issues/%@?key=%@", 
+                                       self.project.redmine.serverAddress, 
+                                       self.index, 
+                                       self.project.redmine.apiKey];
+    NSURL *url                      = [NSURL URLWithString:urlString];
+    NSMutableURLRequest *request    = [[NSMutableURLRequest alloc] initWithURL:url];
+    NSHTTPURLResponse *response     = nil;
+    NSError *error                  = nil;
+    NSData *data                    = [NSURLConnection sendSynchronousRequest:request 
+                                                            returningResponse:&response
+                                                                        error:&error];
+    if (!error) {        
+        TFHpple *doc        = [[TFHpple alloc] initWithHTMLData:data];
+        options.trackers    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_tracker_id']/option"];
+        options.statuses    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_status_id']/option"];
+        options.priorities  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_priority_id']/option"];
+        options.categories  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_category_id']/option"];
+        options.versions    = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_fixed_version_id']/option"];
+        options.assignableUsers = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='issue_assigned_to_id']/option"];
+        options.activities  = [RKParseHelper arrayForElementsOfDoc:doc onXPath:@"//select[@id='time_entry_activity_id']/option"];
+    } else {
+        NSLog(@"Error fetching issue update options: %@ (HTTP status code: %d)", [error localizedDescription], [response statusCode]);
+    }
     
     return options;
 }
@@ -124,10 +137,8 @@
     [jsonDict setObject:issueDict forKey:@"issue"];
     NSString *jsonString = [jsonDict JSONRepresentation];
     NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-    NSLog(@"updating issue from project %@ and redmine %@", self.project, self.project.redmine);
     NSString *urlString = [NSString stringWithFormat:@"%@/issues/%@.json?key=%@", self.project.redmine.serverAddress, self.index, self.project.redmine.apiKey];
     NSURL *url          = [NSURL URLWithString:urlString];
-    NSLog(@"[PUT] %@: \n%@", urlString, jsonString);
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
     [request setHTTPMethod:@"PUT"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
@@ -140,7 +151,6 @@
         NSLog(@"%d: Error updating issue: %@\n%@", [response statusCode], [error localizedDescription], responseString);
         return NO;
     } else {
-        NSLog(@"Issue %@ successfully updated. Response:\n%@", self.index, responseString);
         return YES;
     }
 }
@@ -150,6 +160,7 @@
     NSMutableDictionary *jsonDict = [NSMutableDictionary dictionary];
     NSMutableDictionary *entryDict = [NSMutableDictionary dictionary];
     {
+        if (self.index)             [entryDict setObject:self.index forKey:@"issue_id"];
         if (entry.activity.index)   [entryDict setObject:entry.activity.index forKey:@"activity_id"];
         if (entry.issueIndex)       [entryDict setObject:entry.issueIndex forKey:@"issue_id"];
         if (entry.spentOn)          [entryDict setObject:[RKParseHelper shortDateStringFromDate:entry.spentOn] forKey:@"spent_on"];
@@ -159,9 +170,8 @@
     [jsonDict setObject:entryDict forKey:@"time_entry"];
     NSString *jsonString = [jsonDict JSONRepresentation];
     NSData *jsonData = [jsonString dataUsingEncoding:NSUTF8StringEncoding];
-    NSString *urlString = [NSString stringWithFormat:@"%@/projects/%@/time_entries.json?key=%@", self.project.redmine.serverAddress, self.project.index, self.project.redmine.apiKey];
+    NSString *urlString = [NSString stringWithFormat:@"%@/time_entries.json?key=%@", self.project.redmine.serverAddress, self.project.redmine.apiKey];
     NSURL *url          = [NSURL URLWithString:urlString];
-    NSLog(@"[POST] %@: \n%@", urlString, jsonString);
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
     [request setHTTPMethod:@"POST"];
     [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
@@ -174,7 +184,6 @@
         NSLog(@"%d: Error posting time entry: %@\n%@", [response statusCode], [error localizedDescription], responseString);
         return NO;
     } else {
-        NSLog(@"Time entry successfully posted. Response:\n%@", responseString);
         return YES;
     }
 }
@@ -195,6 +204,9 @@
     if (self.tracker.index)      [issueDict setObject:self.tracker.index forKey:@"tracker_id"];
     if (self.priority.index)     [issueDict setObject:self.priority.index forKey:@"priority_id"];
     if (self.fixedVersion.index) [issueDict setObject:self.fixedVersion.index forKey:@"fixed_version_id"];
+    if (self.category.index)    [issueDict setObject:self.category.index forKey:@"category_id"];
+    if (self.parentTask)    [issueDict setObject:self.parentTask forKey:@"parent"];
+    if (self.estimatedHours) [issueDict setObject:self.estimatedHours forKey:@"estimated_hours"];
     return issueDict;
 }
 
@@ -218,6 +230,35 @@
     anIssue.dueDate     = [RKParseHelper dateForString:[issueDict objectForKey:@"due_date"]];
     anIssue.priority    = [RKParseHelper valueForDict:[issueDict objectForKey:@"priority"]];
     anIssue.fixedVersion = [RKParseHelper valueForDict:[issueDict objectForKey:@"fixed_version"]];
+    anIssue.category    = [RKParseHelper valueForDict:[issueDict objectForKey:@"category"]];
+    anIssue.parentTask  = [[issueDict objectForKey:@"parent"] objectForKey:@"id"];
+    anIssue.estimatedHours = [issueDict objectForKey:@"estimated_hours"];
+    return anIssue;
+}
+
+- (id)copyWithZone:(NSZone *)zone
+{
+    RKIssue *anIssue = [[RKIssue alloc] init];
+    anIssue.index       = [self.index copy];
+    anIssue.subject     = [self.subject copy];
+    anIssue.spentHours  = [self.spentHours copy];
+    anIssue.status      = [self.status copy];
+    anIssue.author      = [self.author copy];
+    anIssue.doneRatio   = [self.doneRatio copy];
+    anIssue.assignedTo  = [self.assignedTo copy];
+    anIssue.createdOn   = [self.createdOn copy];
+    anIssue.subject     = [self.subject copy];
+    anIssue.updatedOn   = [self.updatedOn copy];
+    anIssue.issueDescription = [self.issueDescription copy];
+    anIssue.tracker     = [self.tracker copy];
+    anIssue.index       = [self.index copy];
+    anIssue.startDate   = [self.startDate copy];
+    anIssue.dueDate     = [self.dueDate copy];
+    anIssue.priority    = [self.priority copy];
+    anIssue.fixedVersion = [self.fixedVersion copy];
+    anIssue.category    = [self.category copy];
+    anIssue.parentTask  = [self.parentTask copy];
+    anIssue.estimatedHours = [self.estimatedHours copy];
     return anIssue;
 }
 

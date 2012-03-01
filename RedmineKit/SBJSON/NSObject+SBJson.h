@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2007-2009 Stig Brautaset. All rights reserved.
+ Copyright (C) 2009 Stig Brautaset. All rights reserved.
  
  Redistribution and use in source and binary forms, with or without
  modification, are permitted provided that the following conditions are met:
@@ -28,48 +28,40 @@
  */
 
 #import <Foundation/Foundation.h>
-#import "SBJsonParser.h"
-#import "SBJsonWriter.h"
+
+#pragma mark JSON Writing
+
+/// Adds JSON generation to NSObject
+@interface NSObject (NSObject_SBJsonWriting)
 
 /**
- @brief Facade for SBJsonWriter/SBJsonParser.
-
- Requests are forwarded to instances of SBJsonWriter and SBJsonParser.
+ @brief Encodes the receiver into a JSON string
+ 
+ Although defined as a category on NSObject it is only defined for NSArray and NSDictionary.
+ 
+ @return the receiver encoded in JSON, or nil on error.
+ 
+ @see @ref objc2json
  */
-@interface SBJSON : SBJsonBase <SBJsonParser, SBJsonWriter> {
-
-@private    
-    SBJsonParser *jsonParser;
-    SBJsonWriter *jsonWriter;
-}
-
-
-/// Return the fragment represented by the given string
-- (id)fragmentWithString:(NSString*)jsonrep
-                   error:(NSError**)error;
-
-/// Return the object represented by the given string
-- (id)objectWithString:(NSString*)jsonrep
-                 error:(NSError**)error;
-
-/// Parse the string and return the represented object (or scalar)
-- (id)objectWithString:(id)value
-           allowScalar:(BOOL)x
-    			 error:(NSError**)error;
-
-
-/// Return JSON representation of an array  or dictionary
-- (NSString*)stringWithObject:(id)value
-                        error:(NSError**)error;
-
-/// Return JSON representation of any legal JSON value
-- (NSString*)stringWithFragment:(id)value
-                          error:(NSError**)error;
-
-/// Return JSON representation (or fragment) for the given object
-- (NSString*)stringWithObject:(id)value
-                  allowScalar:(BOOL)x
-    					error:(NSError**)error;
-
+- (NSString *)JSONRepresentation;
 
 @end
+
+
+#pragma mark JSON Parsing
+
+/// Adds JSON parsing methods to NSString
+@interface NSString (NSString_SBJsonParsing)
+
+/**
+ @brief Decodes the receiver's JSON text
+ 
+ @return the NSDictionary or NSArray represented by the receiver, or nil on error.
+ 
+ @see @ref json2objc
+ */
+- (id)JSONValue;
+
+@end
+
+

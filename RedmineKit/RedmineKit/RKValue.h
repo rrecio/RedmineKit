@@ -8,12 +8,14 @@
 
 #import <Foundation/Foundation.h>
 
-@interface RKValue : NSObject
+@interface RKValue : NSObject <NSCopying>
 
-@property (nonatomic) NSString *name;
-@property (nonatomic) NSNumber *index;
+@property (strong, nonatomic) NSString *name;
+@property (strong, nonatomic) NSNumber *index;
 
 - (id)initWithName:(NSString *)name andIndex:(NSNumber *)index;
 + (RKValue *)valueWithIndex:(NSNumber *)index;
++ (RKValue *)valueWithName:(NSString *)name;
++ (RKValue *)valueWithName:(NSString *)name andIndex:(NSNumber *)index;
 
 @end
