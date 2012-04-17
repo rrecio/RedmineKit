@@ -62,6 +62,14 @@
     return value;
 }
 
++ (NSDate *)dateForShortDateString:(NSString *)dateString
+{
+    NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+    [dateFormatter setDateFormat:@"yyyy/MM/dd"];
+    NSDate *date = [dateFormatter dateFromString:dateString];
+    return date;
+}
+
 + (NSDate *)dateForString:(NSString *)dateString
 {
     NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];

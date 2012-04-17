@@ -20,5 +20,6 @@
 + (NSString *)shortDateStringFromDate:(NSDate *)date;
 + (RKValue *)valueForDict:(NSDictionary *)dict;
 + (NSDate *)dateForString:(NSString *)dateString;
++ (NSDate *)dateForShortDateString:(NSString *)dateString;
 
 @end

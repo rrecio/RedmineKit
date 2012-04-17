@@ -11,10 +11,10 @@
 
 @interface RKJournal : NSObject
 
-@property (nonatomic) NSDate *createdOn;
-@property (nonatomic) RKValue *user;
-@property (nonatomic) NSMutableArray *details;
-@property (nonatomic) NSString *notes;
-@property (nonatomic) NSNumber *index;
+@property (strong, nonatomic) NSDate *createdOn;
+@property (strong, nonatomic) RKValue *user;
+@property (strong, nonatomic) NSMutableArray *details;
+@property (strong, nonatomic) NSString *notes;
+@property (strong, nonatomic) NSNumber *index;
 
 @end

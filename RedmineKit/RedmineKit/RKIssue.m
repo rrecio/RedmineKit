@@ -46,8 +46,8 @@
 
 - (NSString *)description
 {
-    return [NSString stringWithFormat:@"%@ #%@ (%@): %@, adicionado por %@", 
-            self.tracker.name, self.index, self.status.name, self.subject, self.author.name];
+    return [NSString stringWithFormat:@"%@ #%@ (%@): %@\n author: %@\n assigned to: %@\n due: %@",
+            self.tracker.name, self.index, self.status.name, self.subject, self.author.name, self.assignedTo, self.dueDate];
 }
 
 - (NSMutableArray *)journals
@@ -68,21 +68,21 @@
     if (!error) {
         NSDictionary *jsonDict  = [responseString JSONValue];
         NSDictionary *issueDict = [jsonDict objectForKey:@"issue"];
-        NSDictionary *journalsDict  = [issueDict objectForKey:@"journals"];
+        NSArray *journalsDict   = [issueDict objectForKey:@"journals"];
         for (NSDictionary *journalDict in journalsDict) {
             RKJournal *aJournal = [[RKJournal alloc] init];
             aJournal.index      = [journalDict objectForKey:@"id"];
             aJournal.createdOn  = [RKParseHelper dateForString:[journalDict objectForKey:@"created_on"]];
             aJournal.user       = [RKParseHelper valueForDict:[journalDict objectForKey:@"user"]];
             aJournal.notes      = [journalDict objectForKey:@"notes"];
-            aJournal.details    = [NSMutableArray array];
+            aJournal.details    = [[NSMutableArray alloc] init];
             for (NSDictionary *detailDict in [journalDict objectForKey:@"details"]) {
-                RKJournalDetail *detail = [[RKJournalDetail alloc] init];
-                detail.theNewValue  = [journalDict objectForKey:@"new_value"];
-                detail.property     = [journalDict objectForKey:@"property"];
-                detail.theOldValue  = [journalDict objectForKey:@"old_value"];
-                detail.name         = [journalDict objectForKey:@"name"];
-                [aJournal.details addObject:detail];
+                RKJournalDetail *journalDetail = [[RKJournalDetail alloc] init];
+                journalDetail.theNewValue  = [detailDict objectForKey:@"new_value"];
+                journalDetail.property     = [detailDict objectForKey:@"property"];
+                journalDetail.theOldValue  = [detailDict objectForKey:@"old_value"];
+                journalDetail.name         = [detailDict objectForKey:@"name"];
+                [aJournal.details addObject:journalDetail];
             }
             [_journals addObject:aJournal];
         }
@@ -226,8 +226,8 @@
     anIssue.issueDescription = [issueDict objectForKey:@"description"];
     anIssue.tracker     = [RKParseHelper valueForDict:[issueDict objectForKey:@"tracker"]];
     anIssue.index       = [issueDict objectForKey:@"id"];
-    anIssue.startDate   = [RKParseHelper dateForString:[issueDict objectForKey:@"start_date"]];
-    anIssue.dueDate     = [RKParseHelper dateForString:[issueDict objectForKey:@"due_date"]];
+    anIssue.startDate   = [RKParseHelper dateForShortDateString:[issueDict objectForKey:@"start_date"]];
+    anIssue.dueDate     = [RKParseHelper dateForShortDateString:[issueDict objectForKey:@"due_date"]];
     anIssue.priority    = [RKParseHelper valueForDict:[issueDict objectForKey:@"priority"]];
     anIssue.fixedVersion = [RKParseHelper valueForDict:[issueDict objectForKey:@"fixed_version"]];
     anIssue.category    = [RKParseHelper valueForDict:[issueDict objectForKey:@"category"]];
@@ -259,6 +259,7 @@
     anIssue.category    = [self.category copy];
     anIssue.parentTask  = [self.parentTask copy];
     anIssue.estimatedHours = [self.estimatedHours copy];
+    anIssue.project     = [self.project copy];
     return anIssue;
 }
 
